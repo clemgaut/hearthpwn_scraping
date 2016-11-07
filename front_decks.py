@@ -6,6 +6,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 import re
 import json
+import sys, os
 import jsonpickle
 import datetime
 import sqlite3
@@ -22,7 +23,7 @@ def extract_front_decks(phantom_js_path=r"./phantomjs-2.1.1-windows/bin/phantomj
 
     html = driver.execute_script("return document.getElementsByTagName('html')[0].innerHTML")
 
-    soup = BeautifulSoup(html)
+    soup = BeautifulSoup(html, "lxml")
     top_decks = []
 
     for deck in soup.find_all(class_=re.compile("type_ranked-deck")):
@@ -47,16 +48,23 @@ def extract_front_decks(phantom_js_path=r"./phantomjs-2.1.1-windows/bin/phantomj
     return top_decks
 
 
-def save_to_json(top_decks, file_prefix="hearthpwn_top_decks_"):
+def save_to_json(top_decks, dir = "", file_prefix="hearthpwn_top_decks_"):
     """
     Save the current decks into a json file named prefix+timestamp.json
     :param top_decks: The decks to save. A list of dict
     :param file_prefix: The json file prefix
     :return:
     """
-    with open(file_prefix + str(datetime.datetime.now().timestamp()) + ".json", "w") as f:
+    with open(os.path.join(dir, file_prefix) + str(datetime.datetime.now().timestamp()) + ".json", "w") as f:
         f.write(jsonpickle.encode(top_decks))
 
 if __name__ == "__main__":
-    top_decks = extract_front_decks()
-    save_to_json(top_decks)
+    top_decks = []
+    if len(sys.argv) > 1:
+        top_decks = extract_front_decks(phantom_js_path=sys.argv[1])
+    else:
+        top_decks = extract_front_decks()
+    if len(sys.argv) > 2:
+        save_to_json(top_decks, sys.argv[2])
+    else:
+        save_to_json(top_decks)
