@@ -69,15 +69,15 @@ def save_to_sqlite(top_decks, db_file="hearth_pwn_scrap.db"):
     :param db_file: The database name
     :return:
     """
-    create_sqlite_table()
+    create_sqlite_table(db_file)
     conn = sqlite3.connect(db_file)
     c = conn.cursor()
     timestamp = datetime.datetime.now().timestamp()
 
     for deck in top_decks:
         id_deck = c.execute("SELECT id FROM " + DECKS_TABLE_NAME + " WHERE link='" + deck.link + "'")
-        if not id_deck:
-            c.execute("INSERT INTO ? (link) VALUES (?)", (DECKS_TABLE_NAME, deck.link))
+        if not id_deck.fetchone():
+            c.execute("INSERT INTO " + DECKS_TABLE_NAME + " (link) VALUES ( '" + deck.link + "')")
         c.execute("INSERT INTO " + FRONT_DECKS_TABLE_NAME +
                 " (deck_id, hs_class, rating, last_edit, views, comments, timestamp) "
                 "values ( (SELECT id FROM " + DECKS_TABLE_NAME + " WHERE link='" + deck.link + "'), ?, ?, ? ,?, ?, ?)",
@@ -87,12 +87,12 @@ def save_to_sqlite(top_decks, db_file="hearth_pwn_scrap.db"):
     conn.close()
 
 
-def create_sqlite_table():
+def create_sqlite_table(db_file):
     """
     Create the sqlite tables for decks and front decks description if they do not exist
     :return:
     """
-    conn = sqlite3.connect("hearth_pwn_scrap.db")
+    conn = sqlite3.connect(db_file)
     c = conn.cursor()
     # We create the table of hearthpwn decks if it does not exists
     c.execute("CREATE TABLE IF NOT EXISTS " + DECKS_TABLE_NAME +
@@ -121,7 +121,7 @@ if __name__ == "__main__":
         storage_func = save_to_sqlite
 
     if args.phantomjsPath:
-        top_decks = extract_front_decks(phantom_js_path=sys.argv[1])
+        top_decks = extract_front_decks(phantom_js_path=args.phantomjsPath)
     else:
         top_decks = extract_front_decks()
     if args.storagePath:
